@@ -1,0 +1,72 @@
+public class SendSMS {
+    @future(callout=true)
+    public static void sendSMS(String mobileNumber, String FirstName, String LastName, Id ContactId, String fromNumber, String campaignName, String disposition) {
+        String phoneNumber = '+1' + mobileNumber;
+        String basicToken = 'xxxxxxxxxxxxxxxx';
+        String domainId = '111111';
+        String smsMessage = 'We have received your information ' + FirstName + ' ' + LastName + ' and will be giving you a call shortly from ' + fromNumber;
+        Http http = new Http();
+        HttpRequest request = new HttpRequest();
+        request.setEndpoint('https://api.prod.us.five9.net/cloudauthsvcs/v1/token');
+        request.setMethod('POST');
+        request.setHeader('Authorization', 'Basic ' + basicToken);
+        request.setHeader('Content-Type',  'application/x-www-form-urlencoded');
+        String payload = 'grant_type=client_credentials';        
+        request.setBody(payload);
+        HttpResponse response = http.send(request);
+        if(response.getStatusCode() != 200) {
+            System.debug('The status code returned was not expected: ' +
+                        response.getStatusCode() + ' ' + response.getStatus());
+        } else {
+            JSONParser parser = JSON.createParser(response.getBody());
+            String accessToken = '';
+            while (parser.nextToken() != null) {
+                if ((parser.getCurrentToken() == JSONToken.FIELD_NAME) && 
+                    (parser.getText() == 'access_token')) {
+                        parser.nextToken();
+                        accessToken = parser.getText();
+                    }
+            }            
+            Http http3 = new Http();
+            HttpRequest request3 = new HttpRequest();
+            request3.setEndpoint('https://api.prod.us.five9.net/opt-in/v1/domains/' + domainId + '/smsoptinlist/entries/' + phoneNumber);
+            request3.setMethod('PUT');
+            request3.setHeader('Authorization', 'Bearer ' + accessToken);                  
+            HttpResponse response3 = http.send(request3);
+            if(response.getStatusCode() != 200) {
+                System.debug('The status code returned was not expected: ' +
+                            response.getStatusCode() + ' ' + response.getStatus());
+            } else {
+                Http http2 = new Http();
+                HttpRequest request2 = new HttpRequest();
+                request2.setEndpoint('https://api.prod.us.five9.net/send-sms-svc/v1/domains/' + domainId + '/send-sms-tasks');
+                request2.setMethod('POST');
+                request2.setHeader('Authorization', 'Bearer ' + accessToken);
+                request2.setHeader('Content-Type', 'application/json');
+                
+                JSONGenerator jsonGen = JSON.createGenerator(true);
+                jsonGen.writeStartObject();
+                jsonGen.writeStringField('campaignName', campaignName);
+                jsonGen.writeStringField('message', smsMessage);
+                jsonGen.writeFieldName('recipients');
+                jsonGen.writeStartArray();
+                jsonGen.writeStartObject();
+                jsonGen.writeStringField('toPhoneNumber', phoneNumber);
+                jsonGen.writeEndObject();
+                jsonGen.writeEndArray();
+                jsonGen.writeStringField('dispositionName', disposition);
+                jsonGen.writeEndObject();
+                String jsonData = jsonGen.getAsString();
+                request2.setBody(jsonData);
+                HttpResponse response2 = http2.send(request2);
+                if(response2.getStatusCode() != 202) {
+                    System.debug('The status code returned was not expected: ' +
+                                response2.getStatusCode() + ' ' + response2.getStatus());
+                } else {
+                    System.debug(response2.getBody());
+                    CreateTask.createTask(ContactId, smsMessage, phoneNumber, campaignName, disposition, fromNumber);
+                }
+            }
+        }          
+	}
+}
