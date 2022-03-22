@@ -1,9 +1,5 @@
 trigger SendSMSTrigger on Contact (after insert) {
-    for(Contact a : Trigger.New) {        
-        System.debug(a.MobilePhone);
-        System.debug(a.FirstName);
-        System.debug(a.LastName);
-        System.debug(a.Id);
+    for(Contact a : Trigger.New) {
         SendSMS.sendSMS(a.MobilePhone, a.FirstName, a.LastName, a.Id, '5551239876', 'SMS - Outbound - 5554744785', 'No Disposition');
     }
 }
