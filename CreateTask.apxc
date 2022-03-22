@@ -1,0 +1,32 @@
+public class CreateTask {
+    public static void createTask(ID contactId, String smsMessage, String phoneNumber, String campaignName, String disposition, String fromNumber) {   
+        Task tsk = new Task();
+        
+        Datetime current = System.Datetime.now();
+        tsk.Subject = (String)current.format('YYYY-MM-dd') + ' Five9 SMS';
+        
+        tsk.ActivityDate = Date.today();
+        
+        tsk.Five9ANI__c = fromNumber;
+        tsk.Five9Campaign__c = campaignName;
+        tsk.Five9DNIS__c = phoneNumber;
+        tsk.Five9CallType__c = 'SMS';
+        tsk.SMS_Message__c = smsMessage;
+        tsk.CallDisposition = disposition;
+        tsk.Status = 'Completed';
+        try {
+            tsk.WhoId = contactId;
+        }
+        catch (Exception ex) {
+            try {
+                tsk.WhatId = contactId;
+            }
+            catch (Exception ex1) {
+                System.debug('Could not match on WhoId or What Id on line #' + ex1.getLineNumber() + ': ' + ex1.getMessage());
+            }
+        }
+        
+        Insert tsk;
+        System.debug('Successfully created task');
+    }
+}
