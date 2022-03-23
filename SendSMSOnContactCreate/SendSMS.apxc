@@ -2,7 +2,8 @@ public class SendSMS {
     @future(callout=true)
     public static void sendSMS(String mobileNumber, String FirstName, String LastName, Id ContactId, String fromNumber, String campaignName, String disposition) {
         String phoneNumber = '+1' + mobileNumber;
-        String basicToken = 'xxxxxxxxxxxxxxxx';
+        //Change to base64 encoded clientid:secret
+	String basicToken = 'xxxxxxxxxxxxxxxx';
         String domainId = '111111';
         String smsMessage = 'We have received your information ' + FirstName + ' ' + LastName + ' and will be giving you a call shortly from ' + fromNumber;
         Http http = new Http();
@@ -27,7 +28,9 @@ public class SendSMS {
                         accessToken = parser.getText();
                     }
             }            
-            Http http3 = new Http();
+            //If you do not want to auto opt-in contact remove this section
+	    //Opt-in Start-----------------
+	    Http http3 = new Http();
             HttpRequest request3 = new HttpRequest();
             request3.setEndpoint('https://api.prod.us.five9.net/opt-in/v1/domains/' + domainId + '/smsoptinlist/entries/' + phoneNumber);
             request3.setMethod('PUT');
@@ -37,6 +40,7 @@ public class SendSMS {
                 System.debug('The status code returned was not expected: ' +
                             response.getStatusCode() + ' ' + response.getStatus());
             } else {
+	    //Opt-in End------------------
                 Http http2 = new Http();
                 HttpRequest request2 = new HttpRequest();
                 request2.setEndpoint('https://api.prod.us.five9.net/send-sms-svc/v1/domains/' + domainId + '/send-sms-tasks');
